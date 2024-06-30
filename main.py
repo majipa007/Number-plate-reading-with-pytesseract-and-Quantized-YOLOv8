@@ -8,7 +8,6 @@ class Main:
         self.path = path
 
     def run(self):
-        print("hello")
         detector = Detector()
         cap = cv2.VideoCapture(self.path)
         p_time = 0
@@ -26,8 +25,8 @@ class Main:
             cv2.putText(frame, str(int(fps)), (10, 170), cv2.FONT_HERSHEY_PLAIN, 5,
                         (255, 0, 255), 5)
 
-            resized_frame = cv2.resize(frame, (1920, 1080))
-            cv2.imshow('number-plate', resized_frame)
+            # resized_frame = cv2.resize(frame, (1920, 1080))
+            cv2.imshow('number-plate', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -36,5 +35,5 @@ class Main:
         cv2.destroyAllWindows()
 
 
-x = Main("test.webm")
+x = Main("a.mp4")
 x.run()

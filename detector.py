@@ -1,6 +1,17 @@
 import onnxruntime
 import numpy as np
 import cv2
+import pytesseract
+
+
+def crop_image(frame, x, y, width, height):
+    # Crop the image
+    cropped_img = frame[y:y + height, x:x + width]
+    return cropped_img
+
+
+def extractor(frame):
+    return pytesseract.image_to_string(frame)
 
 
 def preprocessor(frame):
@@ -12,8 +23,7 @@ def preprocessor(frame):
 
 
 class Detector:
-    def __init__(self, path):
-        self.path = path
+    def __init__(self):
         self.model_path = "static_quantized.onnx"
         self.classes = {0: 'Number-plates'}
         self.session = onnxruntime.InferenceSession(self.model_path, providers=["CPUExecutionProvider"])
@@ -30,10 +40,15 @@ class Detector:
         (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         label_x = x1
         label_y = y1 - 10 if y1 - 10 > label_height else y1 + 10
-        cv2.rectangle(frame, (label_x, label_y - label_height), (label_x + label_width, label_y + label_height), color,
-                      cv2.FILLED)
-        cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-        return frame
+        try:
+            cropped = crop_image(frame, x1, y1, w, h)
+            text = extractor(cropped)
+            print(text)
+            cv2.putText(frame, text, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+        finally:
+            # cv2.rectangle(frame, (label_x, label_y - label_height), (label_x + label_width, label_y + label_height), color,cv2.FILLED)
+            # cv2.putText(frame, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+            return frame
 
     def postprocessor(self, results, frame, confidence, iou):
         img_height, img_width = frame.shape[:2]
@@ -76,5 +91,5 @@ class Detector:
         return self.session.run(["output0"], {"images": ortvalue})
 
     def pipeline(self, frame):
-        frame = self.postprocessor(self.detector(preprocessor(frame)), frame, 0.35, 0.35)
+        frame = self.postprocessor(self.detector(preprocessor(frame)), frame, 0.7, 0.8)
         return frame
